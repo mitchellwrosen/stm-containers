@@ -17,6 +17,7 @@ module STMContainers.Multimap
 )
 where
 
+import Control.Applicative (empty)
 import STMContainers.Prelude hiding (insert, delete, lookup, alter, foldM, toList, empty, null)
 import qualified Focus
 import qualified STMContainers.Map as Map
@@ -158,24 +159,23 @@ null :: Multimap k v -> STM Bool
 null (Multimap m) = Map.null m
 
 -- |
--- Stream associations.
---
--- Amongst other features this function provides an interface to folding
--- via the 'ListT.fold' function.
-stream :: Multimap k v -> ListT STM (k, v)
+-- Stream associations in a `MonadPlus` monad transformer. This will typically
+-- be a "`ListT` done right" type, as provided by the `list-t`,
+-- `list-transformer`, and `pipes` packages.
+stream :: (MonadTrans t, MonadPlus (t STM)) => Multimap k v -> t STM (k, v)
 stream (Multimap m) =
   Map.stream m >>= \(k, s) -> (k,) <$> Set.stream s
 
 -- |
 -- Stream keys.
-streamKeys :: Multimap k v -> ListT STM k
+streamKeys :: (MonadTrans t, MonadPlus (t STM)) => Multimap k v -> t STM k
 streamKeys (Multimap m) =
   fmap fst $ Map.stream m
 
 -- |
 -- Stream values by a key.
-streamByKey :: (Eq k, Eq v, Hashable k, Hashable v) => k -> Multimap k v -> ListT STM v
+streamByKey :: (Eq k, Eq v, Hashable k, Hashable v, MonadTrans t, MonadPlus (t STM)) => k -> Multimap k v -> t STM v
 streamByKey k (Multimap m) =
-  lift (Map.lookup k m) >>= maybe mempty Set.stream
+  lift (Map.lookup k m) >>= maybe empty Set.stream
 
 

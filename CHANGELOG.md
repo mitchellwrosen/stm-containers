@@ -10,5 +10,6 @@ and this project adheres to the
 - Add `STMContainers.Set.member`, `STMContainers.Multimap.member`
 ### Changed
 - Deprecate `STMContainers.Set.lookup`, `STMContainers.Multimap.lookup`
+- Make `stream` functions generic over any `(MonadTrans t, MonadPlus (t STM))`
 ### Removed
 - Removed constraint `Key`, `Value`, `Association`, and `Element`

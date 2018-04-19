@@ -150,10 +150,9 @@ focus2 :: (Eq a, Eq b, Hashable a, Hashable b) => Focus.StrategyM STM a r -> b -
 focus2 s b (Bimap m1 m2) = (inline focus1) s b (Bimap m2 m1)
 
 -- |
--- Stream associations.
--- 
--- Amongst other features this function provides an interface to folding 
--- via the 'ListT.fold' function.
+-- Stream associations in a `MonadPlus` monad transformer. This will typically
+-- be a "`ListT` done right" type, as provided by the `list-t`,
+-- `list-transformer`, and `pipes` packages.
 {-# INLINE stream #-}
-stream :: Bimap a b -> ListT STM (a, b)
+stream :: (MonadTrans t, MonadPlus (t STM)) => Bimap a b -> t STM (a, b)
 stream = Map.stream . m1

@@ -34,7 +34,7 @@ null :: HAMT e -> STM Bool
 null = Nodes.null
 
 {-# INLINE stream #-}
-stream :: HAMT e -> ListT STM e
+stream :: (MonadTrans t, MonadPlus (t STM)) => HAMT e -> t STM e
 stream = Nodes.stream 0
 
 {-# INLINE deleteAll #-}

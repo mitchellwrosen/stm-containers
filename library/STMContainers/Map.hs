@@ -98,10 +98,9 @@ size :: Map k v -> STM Int
 size (Map h) = HAMTNodes.size h
 
 -- |
--- Stream associations.
--- 
--- Amongst other features this function provides an interface to folding 
--- via the 'ListT.fold' function.
+-- Stream associations in a `MonadPlus` monad transformer. This will typically
+-- be a "`ListT` done right" type, as provided by the `list-t`,
+-- `list-transformer`, and `pipes` packages.
 {-# INLINE stream #-}
-stream :: Map k v -> ListT STM (k, v)
+stream :: (MonadTrans t, MonadPlus (t STM)) => Map k v -> t STM (k, v)
 stream (Map h) = HAMT.stream h

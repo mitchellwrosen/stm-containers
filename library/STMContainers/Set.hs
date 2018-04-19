@@ -112,10 +112,9 @@ size :: Set e -> STM Int
 size (Set h) = HAMTNodes.size h
 
 -- |
--- Stream elements.
--- 
--- Amongst other features this function provides an interface to folding 
--- via the 'ListT.fold' function.
+-- Stream elements in a `MonadPlus` monad transformer. This will typically be a
+-- "`ListT` done right" type, as provided by the `list-t`, `list-transformer`,
+-- and `pipes` packages.
 {-# INLINE stream #-}
-stream :: Set e -> ListT STM e
+stream :: (MonadTrans t, MonadPlus (t STM)) => Set e -> t STM e
 stream = fmap elementValue . HAMT.stream . hamt
