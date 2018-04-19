@@ -1,9 +1,6 @@
 module STMContainers.Multimap
 (
   Multimap,
-  Association,
-  Key,
-  Value,
   new,
   newIO,
   insert,
@@ -34,23 +31,11 @@ newtype Multimap k v = Multimap (Map.Map k (Set.Set v))
   deriving (Typeable)
 
 -- |
--- A constraint for associations.
-type Association k v = (Key k, Value v)
-
--- |
--- A constraint for keys.
-type Key k = Map.Key k
-
--- |
--- A constraint for values.
-type Value v = Set.Element v
-
--- |
 -- Look up an item by a value and a key.
 --
 -- /Since: FIXME/
 {-# INLINE member #-}
-member :: (Association k v) => v -> k -> Multimap k v -> STM Bool
+member :: (Eq k, Eq v, Hashable k, Hashable v) => v -> k -> Multimap k v -> STM Bool
 member v k (Multimap m) =
   maybe (return False) (Set.member v) =<< Map.lookup k m
 
@@ -58,19 +43,19 @@ member v k (Multimap m) =
 -- Look up an item by a value and a key.
 {-# INLINE lookup #-}
 {-# DEPRECATED lookup "Use 'member' instead" #-}
-lookup :: (Association k v) => v -> k -> Multimap k v -> STM Bool
+lookup :: (Eq k, Eq v, Hashable k, Hashable v) => v -> k -> Multimap k v -> STM Bool
 lookup = member
 
 -- |
 -- Look up all values by key.
 {-# INLINE lookupByKey #-}
-lookupByKey :: Key k => k -> Multimap k v -> STM (Maybe (Set.Set v))
+lookupByKey :: (Eq k, Hashable k) => k -> Multimap k v -> STM (Maybe (Set.Set v))
 lookupByKey k (Multimap m) = Map.lookup k m
 
 -- |
 -- Insert an item.
 {-# INLINABLE insert #-}
-insert :: (Association k v) => v -> k -> Multimap k v -> STM ()
+insert :: (Eq k, Eq v, Hashable k, Hashable v) => v -> k -> Multimap k v -> STM ()
 insert v k (Multimap m) =
   Map.focus ms k m
   where
@@ -89,7 +74,7 @@ insert v k (Multimap m) =
 -- |
 -- Delete an item by a value and a key.
 {-# INLINABLE delete #-}
-delete :: (Association k v) => v -> k -> Multimap k v -> STM ()
+delete :: (Eq k, Eq v, Hashable k, Hashable v) => v -> k -> Multimap k v -> STM ()
 delete v k (Multimap m) =
   Map.focus ms k m
   where
@@ -107,7 +92,7 @@ delete v k (Multimap m) =
 -- |
 -- Delete all values associated with a key.
 {-# INLINEABLE deleteByKey #-}
-deleteByKey :: Key k => k -> Multimap k v -> STM ()
+deleteByKey :: (Eq k, Hashable k) => k -> Multimap k v -> STM ()
 deleteByKey k (Multimap m) =
   Map.delete k m
 
@@ -126,12 +111,12 @@ deleteAll (Multimap h) = Map.deleteAll h
 -- which value we're focusing on and it doesn't make sense to replace it,
 -- however we still can decide wether to keep or remove it.
 {-# INLINE focus #-}
-focus :: (Association k v) => Focus.StrategyM STM () r -> v -> k -> Multimap k v -> STM r
+focus :: (Eq k, Eq v, Hashable k, Hashable v) => Focus.StrategyM STM () r -> v -> k -> Multimap k v -> STM r
 focus =
   \s v k (Multimap m) -> Map.focus (liftSetItemStrategy v s) k m
   where
     liftSetItemStrategy ::
-      (Set.Element e) => e -> Focus.StrategyM STM () r -> Focus.StrategyM STM (Set.Set e) r
+      (Eq e, Hashable e) => e -> Focus.StrategyM STM () r -> Focus.StrategyM STM (Set.Set e) r
     liftSetItemStrategy e s =
       \case
         Nothing ->
@@ -189,7 +174,7 @@ streamKeys (Multimap m) =
 
 -- |
 -- Stream values by a key.
-streamByKey :: Association k v => k -> Multimap k v -> ListT STM v
+streamByKey :: (Eq k, Eq v, Hashable k, Hashable v) => k -> Multimap k v -> ListT STM v
 streamByKey k (Multimap m) =
   lift (Map.lookup k m) >>= maybe mempty Set.stream
 

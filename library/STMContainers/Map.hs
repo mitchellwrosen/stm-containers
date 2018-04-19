@@ -1,7 +1,6 @@
 module STMContainers.Map
 (
   Map,
-  Key,
   new,
   newIO,
   insert,
@@ -26,10 +25,6 @@ import qualified Focus
 newtype Map k v = Map (HAMT.HAMT (k, v))
   deriving (Typeable)
 
--- |
--- A constraint for keys.
-type Key a = (Eq a, Hashable a)
-
 instance (Eq k) => HAMTNodes.Element (k, v) where
   type ElementKey (k, v) = k
   elementKey (k, v) = k
@@ -41,19 +36,19 @@ associationValue (_, v) = v
 -- |
 -- Look up an item.
 {-# INLINE lookup #-}
-lookup :: (Key k) => k -> Map k v -> STM (Maybe v)
+lookup :: (Eq k, Hashable k) => k -> Map k v -> STM (Maybe v)
 lookup k = focus Focus.lookupM k
 
 -- |
 -- Insert a value at a key.
 {-# INLINE insert #-}
-insert :: (Key k) => v -> k -> Map k v -> STM ()
+insert :: (Eq k, Hashable k) => v -> k -> Map k v -> STM ()
 insert !v !k (Map h) = HAMT.insert (k, v) h
 
 -- |
 -- Delete an item by a key.
 {-# INLINE delete #-}
-delete :: (Key k) => k -> Map k v -> STM ()
+delete :: (Eq k, Hashable k) => k -> Map k v -> STM ()
 delete k (Map h) = HAMT.focus Focus.deleteM k h
 
 -- |
@@ -70,7 +65,7 @@ deleteAll (Map h) = HAMT.deleteAll h
 -- E.g., you can look up an item and delete it at the same time,
 -- or update it and return the new value.
 {-# INLINE focus #-}
-focus :: (Key k) => Focus.StrategyM STM v r -> k -> Map k v -> STM r
+focus :: (Eq k, Hashable k) => Focus.StrategyM STM v r -> k -> Map k v -> STM r
 focus f k (Map h) = HAMT.focus f' k h
   where
     f' = (fmap . fmap . fmap) (\v -> k `seq` v `seq` (k, v)) . f . fmap associationValue

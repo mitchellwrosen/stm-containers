@@ -1,7 +1,6 @@
 module STMContainers.Set
 (
   Set,
-  Element,
   new,
   newIO,
   insert,
@@ -27,10 +26,6 @@ import qualified Focus
 newtype Set e = Set {hamt :: HAMT.HAMT (HAMTElement e)}
   deriving (Typeable)
 
--- |
--- A constraint for elements.
-type Element a = (Eq a, Hashable a)
-
 newtype HAMTElement e = HAMTElement e
 
 instance (Eq e) => HAMTNodes.Element (HAMTElement e) where
@@ -44,13 +39,13 @@ elementValue (HAMTElement e) = e
 -- |
 -- Insert a new element.
 {-# INLINE insert #-}
-insert :: (Element e) => e -> Set e -> STM ()
+insert :: (Eq e, Hashable e) => e -> Set e -> STM ()
 insert e = HAMT.insert (HAMTElement e) . hamt
 
 -- |
 -- Delete an element.
 {-# INLINE delete #-}
-delete :: (Element e) => e -> Set e -> STM ()
+delete :: (Eq e, Hashable e) => e -> Set e -> STM ()
 delete e = HAMT.focus Focus.deleteM e . hamt
 
 -- |
@@ -64,14 +59,14 @@ deleteAll = HAMT.deleteAll . hamt
 --
 -- /Since: FIXME/
 {-# INLINE member #-}
-member :: (Element e) => e -> Set e -> STM Bool
+member :: (Eq e, Hashable e) => e -> Set e -> STM Bool
 member e = fmap (maybe False (const True)) . HAMT.focus Focus.lookupM e . hamt
 
 -- |
 -- Lookup an element.
 {-# INLINE lookup #-}
 {-# DEPRECATED lookup "Use 'member' instead" #-}
-lookup :: (Element e) => e -> Set e -> STM Bool
+lookup :: (Eq e, Hashable e) => e -> Set e -> STM Bool
 lookup = member
 
 -- |
@@ -83,7 +78,7 @@ lookup = member
 -- which element we're focusing on and it doesn't make sense to replace it,
 -- however we still can decide wether to keep or remove it.
 {-# INLINE focus #-}
-focus :: (Element e) => Focus.StrategyM STM () r -> e -> Set e -> STM r
+focus :: (Eq e, Hashable e) => Focus.StrategyM STM () r -> e -> Set e -> STM r
 focus s e = HAMT.focus elementStrategy e . hamt
   where
     elementStrategy = 
